@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, MultiParamTypeClasses, EmptyDataDecls, FunctionalDependencies, FlexibleInstances, MagicHash, Rank2Types, CPP #-}
 {-# LANGUAGE BangPatterns, FlexibleContexts #-}
 {-# OPTIONS -funbox-strict-fields #-}
-module Data.Map.AVL.Internals where
+module Data.Map.AVL.Internals (module Data.Map.AVL.Internals) where
 
 import GHC.Exts
 
@@ -108,3 +108,26 @@ nil = SNode 0# Nil
 
 singleton :: k -> a -> SNode (Succ Zero) k a
 singleton k a = bin k a nil nil
+
+deleteFindMin, deleteFindMax :: SNode (Succ d) k a -> (k, a, Res d k a)
+#define DFMINRECURSE let !(k, a, l') = deleteFindMin l in (k, a, joinL kx x l' r)
+deleteFindMin L(kx x l r)	= DFMINRECURSE
+deleteFindMin B(kx x NIL _)	= (kx, x, res nil)
+deleteFindMin B(kx x l@L(_ _ _ _) r) = DFMINRECURSE
+deleteFindMin B(kx x l@B(_ _ _ _) r) = DFMINRECURSE
+deleteFindMin B(kx x l@R(_ _ _ _) r) = DFMINRECURSE
+deleteFindMin R(kx x NIL r)	= (kx, x, res r)
+deleteFindMin R(kx x l@L(_ _ _ _) r) = DFMINRECURSE
+deleteFindMin R(kx x l@B(_ _ _ _) r) = DFMINRECURSE
+deleteFindMin R(kx x l@R(_ _ _ _) r) = DFMINRECURSE
+
+#define DFMAXRECURSE let !(k, a, r') = deleteFindMax r in (k, a, joinR kx x l r')
+deleteFindMax R(kx x l r)	= DFMAXRECURSE
+deleteFindMax B(kx x _ NIL)	= (kx, x, res nil)
+deleteFindMax B(kx x l r@L(_ _ _ _)) = DFMAXRECURSE
+deleteFindMax B(kx x l r@B(_ _ _ _)) = DFMAXRECURSE
+deleteFindMax B(kx x l r@R(_ _ _ _)) = DFMAXRECURSE
+deleteFindMax L(kx x l NIL)	= (kx, x, res l)
+deleteFindMax L(kx x l r@L(_ _ _ _)) = DFMAXRECURSE
+deleteFindMax L(kx x l r@B(_ _ _ _)) = DFMAXRECURSE
+deleteFindMax L(kx x l r@R(_ _ _ _)) = DFMAXRECURSE
