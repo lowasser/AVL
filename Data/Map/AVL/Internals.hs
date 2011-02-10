@@ -39,13 +39,13 @@ runRes res f g = case res of
   DPlusOne t -> g t
 
 res :: SNode d k a -> Res d k a
-res (SNode sz# t) = Res $ \ f _ -> f sz# t
+res = D
 
 resNode :: Node d k a -> Res d k a
 resNode = res . sNode
 
 res' :: SNode (Succ d) k a -> Res d k a
-res' (SNode sz# t) = Res $ \ _ g -> g sz# t
+res' = DPlusOne
 
 resNode' :: Node (Succ d) k a -> Res d k a
 resNode' = res' . sNode
