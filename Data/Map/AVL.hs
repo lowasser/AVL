@@ -40,7 +40,7 @@ insertMax k a B(kx x ~NIL NIL)	= res' (bin kx x nil (singleton k a))
 insertMax k a B(kx x l r)	= joinR kx x l (insertMax k a r)
 insertMax k a R(kx x l r)	= joinR kx x l (insertMax k a r)
 
-#define GLUE if sz l >=# sz r then let !(k, a, l') = deleteFindMax l in joinL k a l' r else \
+#define GLUE if sz l >= sz r then let !(k, a, l') = deleteFindMax l in joinL k a l' r else \
 	let !(k, a, r') = deleteFindMin r in joinR k a l r'
 
 glue :: SNode d k a -> SNode d k a -> Res d k a

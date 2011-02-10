@@ -8,8 +8,7 @@ import GHC.Exts
 data Zero
 data Succ d
 
-data Map k a = forall d . Map (SNode d k a)
-data SNode d k a = SNode {sz :: Int#, node :: Node d k a}
+data SNode d k a = SNode {sz :: !Int, node :: Node d k a}
 data Node d k a where
   Nil :: Node Zero k a
   LeftBin :: k -> a -> !(SNode (Succ d) k a) -> !(SNode d k a) -> Node (Succ (Succ d)) k a
@@ -25,13 +24,13 @@ data Res d k a = D !(SNode d k a) | DPlusOne !(SNode (Succ d) k a)
 
 sNode :: Node d k a -> SNode d k a
 sNode t = case t of
-	Nil	-> SNode 0# Nil
+	Nil	-> SNode 0 Nil
 	LeftBin _ _ l r
-		-> SNode (sz l +# sz r +# 1#) t
+		-> SNode (sz l + sz r + 1) t
 	RightBin _ _ l r
-		-> SNode (sz l +# sz r +# 1#) t
+		-> SNode (sz l + sz r + 1) t
 	Balanced _ _ l r
-		-> SNode (sz l +# sz r +# 1#) t
+		-> SNode (sz l + sz r + 1) t
 
 runRes :: Res d k a -> (SNode d k a -> r) -> (SNode (Succ d) k a -> r) -> r
 runRes res f g = case res of
@@ -106,7 +105,7 @@ joinR :: (Join dL dR dOut, Join dL (Succ dR) dOut) => k -> a -> SNode dL k a -> 
 joinR k a l r = runRes r (join k a l) (join k a l)
 
 nil :: SNode Zero k a
-nil = SNode 0# Nil
+nil = SNode 0 Nil
 
 singleton :: k -> a -> SNode (Succ Zero) k a
 singleton k a = bin k a nil nil
