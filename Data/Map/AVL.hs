@@ -1,7 +1,9 @@
 {-# LANGUAGE GADTs, CPP, MagicHash, Rank2Types, ScopedTypeVariables, NamedFieldPuns #-}
-module Data.Map.AVL (AVLMap, insertWithKey, lookup, mapWithKey, foldrWithKey, foldlWithKey) where
+module Data.Map.AVL (AVLMap, insertWithKey, lookup, mapWithKey, foldrWithKey, foldlWithKey, traverseWithKey) where
 
+import Control.Applicative
 import Data.Foldable
+import Data.Traversable
 import Data.Map.AVL.Internals
 import Prelude hiding (lookup)
 
@@ -19,6 +21,9 @@ instance Functor (AVLMap k) where
 instance Foldable (AVLMap k) where
   foldr f z m = foldrWithKey (\ _ a z -> f a z) z m
   foldl f z m = foldlWithKey (\ z _ a -> f z a) z m
+
+instance Traversable (AVLMap k) where
+  traverse f m = traverseWithKey (const f) m
 
 insertWithKey :: forall k a . Ord k => (k -> a -> a -> a) -> k -> a -> AVLMap k a -> AVLMap k a
 insertWithKey f k a (AVLMap t) = runRes (ins t) AVLMap AVLMap where
@@ -103,4 +108,17 @@ foldlWithKey f z (AVLMap t) = fold z t where
   fold z L(kx x l r) = f (z `fold` l) kx x `fold` r
   fold z B(kx x l r) = f (z `fold` l) kx x `fold` r
   fold z R(kx x l r) = f (z `fold` l) kx x `fold` r
-  
+
+traverseWithKey :: forall f k a b . Applicative f => (k -> a -> f b) -> AVLMap k a -> f (AVLMap k b)
+traverseWithKey f (AVLMap (SNode sz t)) = AVLMap . SNode sz <$> trav t where
+  trav :: forall d . Node d k a -> f (Node d k b)
+  trav Nil = pure Nil
+  trav (LeftBin kx x (SNode szl l) (SNode szr r)) =
+    result <$> f kx x <*> trav l <*> trav r
+    where result x' l' r' = LeftBin kx x' (SNode szl l') (SNode szr r')
+  trav (Balanced kx x (SNode szl l) (SNode szr r)) =
+    result <$> f kx x <*> trav l <*> trav r
+    where result x' l' r' = Balanced kx x' (SNode szl l') (SNode szr r')
+  trav (RightBin kx x (SNode szl l) (SNode szr r)) =
+    result <$> f kx x <*> trav l <*> trav r
+    where result x' l' r' = RightBin kx x' (SNode szl l') (SNode szr r')
