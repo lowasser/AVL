@@ -21,7 +21,7 @@ data Node d k a where
 #define B(args) (SNode _ (Balanced args))
 #define R(args) (SNode _ (RightBin args))
 
-newtype Res d k a = Res {execRes :: forall r . (Int# -> Node d k a -> r) -> (Int# -> Node (Succ d) k a -> r) -> r}
+data Res d k a = D !(SNode d k a) | DPlusOne !(SNode (Succ d) k a)
 
 sNode :: Node d k a -> SNode d k a
 sNode t = case t of
@@ -34,7 +34,9 @@ sNode t = case t of
 		-> SNode (sz l +# sz r +# 1#) t
 
 runRes :: Res d k a -> (SNode d k a -> r) -> (SNode (Succ d) k a -> r) -> r
-runRes res f g = execRes res (\ sz# t -> f (SNode sz# t)) (\ sz# t -> g (SNode sz# t))
+runRes res f g = case res of
+  D t	-> f t
+  DPlusOne t -> g t
 
 res :: SNode d k a -> Res d k a
 res (SNode sz# t) = Res $ \ f _ -> f sz# t
