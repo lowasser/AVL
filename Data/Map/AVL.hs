@@ -1,8 +1,8 @@
 {-# LANGUAGE GADTs, CPP, MagicHash, Rank2Types, ScopedTypeVariables, NamedFieldPuns #-}
-module Data.Map.AVL (AVLMap, insertWithKey, lookup, mapWithKey) where
+module Data.Map.AVL (AVLMap, insertWithKey, lookup, mapWithKey, foldrWithKey, foldlWithKey) where
 
+import Data.Foldable
 import Data.Map.AVL.Internals
-import GHC.Exts
 import Prelude hiding (lookup)
 
 #define NIL (SNode _ Nil)
@@ -12,6 +12,13 @@ import Prelude hiding (lookup)
 
 data AVLMap k a where
   AVLMap :: !(SNode d k a) -> AVLMap k a
+
+instance Functor (AVLMap k) where
+  fmap f = mapWithKey (const f)
+
+instance Foldable (AVLMap k) where
+  foldr f z m = foldrWithKey (\ _ a z -> f a z) z m
+  foldl f z m = foldlWithKey (\ z _ a -> f z a) z m
 
 insertWithKey :: forall k a . Ord k => (k -> a -> a -> a) -> k -> a -> AVLMap k a -> AVLMap k a
 insertWithKey f k a (AVLMap t) = runRes (ins t) AVLMap AVLMap where
@@ -80,3 +87,20 @@ mapWithKey f (AVLMap t) = AVLMap (smap t) where
   {-# INLINE smap #-}
   smap :: forall d . SNode d k a -> SNode d k b
   smap SNode{sz, node} = SNode{sz, node = nmap node}
+
+foldrWithKey :: forall k a b . (k -> a -> b -> b) -> b -> AVLMap k a -> b
+foldrWithKey f z (AVLMap t) = fold t z where
+  fold :: forall d . SNode d k a -> b -> b
+  fold NIL z = z
+  fold L(kx x l r) z = fold l $ f kx x $ fold r z
+  fold B(kx x l r) z = fold l $ f kx x $ fold r z
+  fold R(kx x l r) z = fold l $ f kx x $ fold r z
+
+foldlWithKey :: forall k a b . (b -> k -> a -> b) -> b -> AVLMap k a -> b
+foldlWithKey f z (AVLMap t) = fold z t where
+  fold :: forall d . b -> SNode d k a -> b
+  fold z NIL = z
+  fold z L(kx x l r) = f (z `fold` l) kx x `fold` r
+  fold z B(kx x l r) = f (z `fold` l) kx x `fold` r
+  fold z R(kx x l r) = f (z `fold` l) kx x `fold` r
+  
